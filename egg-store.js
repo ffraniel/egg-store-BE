@@ -99,4 +99,18 @@ app.get('/quantity', function (req, res) {
   });
 });
 
+app.get('/login/:username/:password', function(req, res) {
+  const username = req.params.username;
+  const password = req.params.password;
+  if (username === req.webtaskContext.secrets.username && password === req.webtaskContext.secrets.password) {
+    res.send({
+      success: true
+    })
+  } else {
+    res.send({
+      success: false
+    })
+  }
+})
+
 module.exports = Webtask.fromExpress(app);
