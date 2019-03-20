@@ -354,7 +354,6 @@ app.post('/orders/amend/:orderID', function (req, res) {
     const matchedID = ordersList.find(function(element) {
       return element.id === orderID;
     });
-    console.log("matched id = ", matchedID);
 
     if (matchedID === undefined) {
       res.send({
