@@ -233,4 +233,73 @@ app.get('/datareset', function(req, res) {
   });
 });
 
+app.put('/orders/remove/:orderID', function (req, res){
+  const orderID = req.params.orderID;
+  // handle no order ID
+  if (!orderID) {
+    res.send({
+      action: 'Remove Order by ID',
+      id: '',
+      completed: false,
+      message: 'Unable to delete order. No order ID provided.'
+    });
+    return;
+  };
+  // get data store
+  req.webtaskContext.storage.get(function (err, data) {
+    if (err) {
+      console.log({error: err});
+      return;
+    };
+
+    // get current orders
+    const ordersList = data.orders || [];
+
+    // handle an empty array
+    if (ordersList.length === 0) {
+      res.send({
+        action: 'Remove Order by ID',
+        id: orderID,
+        completed: false,
+        message: 'Unable to delete order. No previous orders.'
+      });
+      return;
+    };
+
+    const filteredOrdersList = ordersList.filter((item) => {
+      return item.id !== orderID;
+    })
+
+    if (ordersList.length === filteredOrdersList.length) {
+      res.send({
+        action: 'Remove Order by ID',
+        id: orderID,
+        completed: false,
+        message: 'Unable to find a match. No order deleted.'
+      });
+      return;
+    };
+
+    // add the filtered orders back on to the data object
+    data.orders = filteredOrdersList;
+
+    // set the data storage
+    req.webtaskContext.storage.set(data, function (err) {
+      if (err) {
+        res.send({
+          error: err
+        });
+        return;
+      };
+      res.send({
+        action: 'Remove Order by ID',
+        id: orderID,
+        completed: true,
+        message: `Removed order ${orderID} from orders list.`
+      });
+      return;
+    });
+  });
+});
+
 module.exports = Webtask.fromExpress(app);
