@@ -302,4 +302,100 @@ app.put('/orders/remove/:orderID', function (req, res){
   });
 });
 
+app.post('/orders/amend/:orderID', function (req, res) {
+  const orderID = req.params.orderID;
+  const amendedOrder = req.body;
+
+  // handle no order ID
+  if (!orderID) {
+    res.send({
+      action: 'amend order by ID',
+      id: '',
+      completed: false,
+      message: 'Unable to amend order. No order ID provided.'
+    });
+    return;
+  };
+
+  // handle no body sent
+  if (amendedOrder === undefined) {
+    res.send({
+      action: "amend order by ID",
+      id: orderID,
+      completed: false,
+      message: "No details attached"
+    });
+    return;
+  };
+
+  // get data store
+  req.webtaskContext.storage.get(function (err, data) {
+    if (err) {
+      console.log({
+        error: err
+      });
+    };
+
+    // get current orders
+    const ordersList = data.orders || [];
+
+    // handle an empty array
+    if (ordersList.length === 0) {
+      res.send({
+        action: 'amend Order by ID',
+        id: orderID,
+        completed: false,
+        message: 'Unable to amend order. No previous orders.'
+      });
+      return;
+    };
+
+    // check it contains an item with the ID
+    const matchedID = ordersList.find(function(element) {
+      return element.id === orderID;
+    });
+    console.log("matched id = ", matchedID);
+
+    if (matchedID === undefined) {
+      res.send({
+        action: "amend order by ID",
+        id: orderID,
+        message: "No orders with matching ID",
+        completed: false
+      });
+      return;
+    };
+
+    // find and amend order
+    const amendedOrdersList = ordersList.map((item)=>{
+      if (item.id === orderID) {
+        item.name = amendedOrder.name;
+        return item;
+      } else {
+        return item;
+      };
+    });
+
+    // put amended list back on data object
+    data.orders = amendedOrdersList;
+
+    // set the data to storage
+    req.webtaskContext.storage.set(data, function (err) {
+      if (err) {
+        res.send({
+          error: err
+        });
+        return;
+      };
+      res.send({
+        action: "amend order by ID",
+        id: orderID,
+        message: `Successfully amended order ${orderID}.`,
+        completed: true,
+        orders: amendedOrdersList
+      });
+    });
+  });
+});
+
 module.exports = Webtask.fromExpress(app);
