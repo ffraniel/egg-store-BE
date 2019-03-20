@@ -397,4 +397,87 @@ app.post('/orders/amend/:orderID', function (req, res) {
   });
 });
 
+app.put('/orders/complete/:orderID', function (req, res) {
+  const orderID = req.params.orderID;
+
+  // handle no order ID
+  if (!orderID) {
+    res.send({
+      action: 'Mark order as complete by ID',
+      id: '',
+      completed: false,
+      message: 'Unable to mark order as complete. No order ID provided.'
+    });
+    return;
+  };
+
+  // get data store
+  req.webtaskContext.storage.get(function (err, data) {
+    if (err) {
+      console.log({
+        error: err
+      });
+    };
+
+    // get current orders
+    const ordersList = data.orders || [];
+
+    // handle an empty array
+    if (ordersList.length === 0) {
+      res.send({
+        action: 'Mark order as complete by ID',
+        id: orderID,
+        completed: false,
+        message: 'Unable to mark order as complete. No previous orders.'
+      });
+      return;
+    };
+
+    // check it contains an item with the ID
+    const matchedID = ordersList.find(function(element) {
+      return element.id === orderID;
+    });
+
+    if (matchedID === undefined) {
+      res.send({
+        action: "Mark order as completed by ID",
+        id: orderID,
+        message: "No orders with matching ID",
+        completed: false
+      });
+      return;
+    };
+
+    // find and mark item as completed
+    const amendedOrdersList = ordersList.map((item)=>{
+      if (item.id === orderID) {
+        item.complete = !item.complete;
+        return item;
+      } else {
+        return item;
+      };
+    });
+
+    // put amended list back on data object
+    data.orders = amendedOrdersList;
+
+    // set the data to storage
+    req.webtaskContext.storage.set(data, function (err) {
+      if (err) {
+        res.send({
+          error: err
+        });
+        return;
+      };
+      res.send({
+        action: "Mark order as completed by ID",
+        id: orderID,
+        message: `Successfully marked order ${orderID} as complete.`,
+        completed: true,
+        orders: amendedOrdersList
+      });
+    });
+  });
+});
+
 module.exports = Webtask.fromExpress(app);
