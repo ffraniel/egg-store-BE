@@ -2,6 +2,17 @@ var express = require('express');
 var Webtask = require('webtask-tools');
 var bodyParser = require('body-parser');
 var app = express();
+const uuid = require('uuidv4');
+
+const checkOrderData = (order)=>{
+  if (order.name) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
+app.use(bodyParser.urlencoded({extended:false}));
 
 app.use(bodyParser.json());
 
@@ -21,9 +32,12 @@ app.get('/add/:number', function (req, res) {
         error: err
       });
     }
+    console.log("data = ", data);
     if (data === undefined) {
+      console.log("Data object undfined")
       data = {};
     }
+    console.log("data = ", data);
     const currentEggs = data.eggQuantity || 0;
     const newTotal = currentEggs + increment;
     data.eggQuantity = newTotal;
@@ -111,6 +125,112 @@ app.get('/login/:username/:password', function(req, res) {
       success: false
     })
   }
-})
+});
+
+app.get('/orders', function(req, res) {
+  req.webtaskContext.storage.get(function (err, data) {
+    if (err) {
+      res.send({
+        error: err
+      });
+    }
+    let orders = data.orders; 
+    res.send(orders);
+  });
+});
+
+app.post('/orders/add', function (req, res) {
+  const newOrder = req.body;
+  
+  // handle no body sent
+  if (newOrder === undefined) {
+    res.send({
+      action: "place order",
+      message: "No order attached",
+      newOrder: null
+    });
+    return;
+  };
+
+  // check newOrder has all correct fields completed
+  if (!checkOrderData(newOrder)) {
+    res.send({
+      action: "place order",
+      message: "Order details incorrect",
+      newOrder: null
+    });
+    return;
+  };
+
+  // get data
+  req.webtaskContext.storage.get(function (err, data) {
+    if (err) {
+      console.log("Data fetch error")
+      res.send({
+        error: err
+      });
+      return;
+    };
+
+    //get orders or handle no orders
+    const ordersList = data.orders || [];
+
+    // generate id, add incomplete, date and attach to newOrder
+    newOrder.date = new Date();
+    newOrder.id = uuid();
+    newOrder.complete = false;
+
+    // add new order to order list
+    ordersList.push(newOrder);
+
+    // reattach to data object
+    data.orders = ordersList;
+
+    //set data
+    req.webtaskContext.storage.set(data, function (err) {
+      if (err) {
+        res.send({
+          error: err
+        });
+        return;
+      };
+      res.send({
+        message: "input",
+        newOrder,
+        orders: ordersList
+      });
+      return;
+    });
+
+  });
+});
+
+app.get('/data', function(req, res) {
+  req.webtaskContext.storage.get(function (err, data) {
+    if (err) {
+      res.send({
+        error: err
+      })
+    }
+    res.send({data});
+  });
+});
+
+app.get('/datareset', function(req, res) {
+  req.webtaskContext.storage.get(function (err, data) {
+    if (err) {
+      res.send({
+        error: err
+      })
+    }
+    data.orders = [];
+    req.webtaskContext.storage.set(data, function (err) {
+      if(err) {
+        console.log({error: err});
+      }
+      res.send({data});
+    });
+  });
+});
 
 module.exports = Webtask.fromExpress(app);
