@@ -32,12 +32,9 @@ app.get('/add/:number', function (req, res) {
         error: err
       });
     }
-    console.log("data = ", data);
     if (data === undefined) {
-      console.log("Data object undfined")
       data = {};
     }
-    console.log("data = ", data);
     const currentEggs = data.eggQuantity || 0;
     const newTotal = currentEggs + increment;
     data.eggQuantity = newTotal;
@@ -165,7 +162,6 @@ app.post('/orders/add', function (req, res) {
   // get data
   req.webtaskContext.storage.get(function (err, data) {
     if (err) {
-      console.log("Data fetch error")
       res.send({
         error: err
       });
