@@ -113,6 +113,8 @@ app.get('/quantity', function (req, res) {
 app.get('/login/:username/:password', function(req, res) {
   const username = req.params.username;
   const password = req.params.password;
+  console.log("the correct answer name is", req.webtaskContext.secrets.username)
+  console.log("the correct password is", req.webtaskContext.secrets.password)
   if (username === req.webtaskContext.secrets.username && password === req.webtaskContext.secrets.password) {
     res.send({
       success: true
@@ -175,9 +177,15 @@ app.post('/orders/add', function (req, res) {
     newOrder.date = new Date();
     newOrder.id = uuid();
     newOrder.complete = false;
+    newOrder.completedDate = '';
 
     // add new order to order list
     ordersList.push(newOrder);
+
+    // calculate and attach total cost
+    newOrder.totalCost = ordersList.reduce((acc, currentVal) => {
+      return acc + (currentVal.price * currentVal.quantity);
+    }, 0);
 
     // reattach to data object
     data.orders = ordersList;
@@ -365,6 +373,9 @@ app.post('/orders/amend/:orderID', function (req, res) {
     const amendedOrdersList = ordersList.map((item)=>{
       if (item.id === orderID) {
         item.name = amendedOrder.name;
+        item.paid = amendedOrder.paid;
+        item.notes = amendedOrder.notes;
+        item.order = amendedOrder.order;
         return item;
       } else {
         return item;
@@ -444,10 +455,18 @@ app.put('/orders/complete/:orderID', function (req, res) {
       return;
     };
 
+    var completedDate = '';
     // find and mark item as completed
     const amendedOrdersList = ordersList.map((item)=>{
       if (item.id === orderID) {
         item.complete = !item.complete;
+        console.log("is string longer length: ", item.completedDate.length)
+        if (item.completedDate.length > 0) {
+          item.completedDate = '';
+        } else {
+          completedDate = new Date();
+          item.completedDate = completedDate;
+        }
         return item;
       } else {
         return item;
@@ -470,6 +489,7 @@ app.put('/orders/complete/:orderID', function (req, res) {
         id: orderID,
         message: `Successfully marked order ${orderID} as complete.`,
         completed: true,
+        completedDate,
         orders: amendedOrdersList
       });
     });
