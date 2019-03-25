@@ -156,7 +156,8 @@ app.post('/orders/add', function (req, res) {
     res.send({
       action: "place order",
       message: "Order details incorrect",
-      newOrder: null
+      newOrder: null,
+      failedOrder: newOrder
     });
     return;
   };
