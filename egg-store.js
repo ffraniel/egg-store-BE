@@ -489,7 +489,7 @@ app.put('/orders/complete/:orderID', function (req, res) {
         action: "Mark order as completed by ID",
         id: orderID,
         message: `Successfully marked order ${orderID} as complete.`,
-        completed: true,
+        completed: completedDate !== '' ? true: false,
         completedDate,
         orders: amendedOrdersList
       });
